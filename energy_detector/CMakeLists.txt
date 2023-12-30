@@ -73,7 +73,7 @@ if(BUILD_TESTING)
   add_definitions(-DTEST_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test")
 
   find_package(ament_cmake_gtest)
-  set(TEST_NAME nanodet_test)
+  set(TEST_NAME test_node_video)
   ament_add_gtest(${TEST_NAME} test/${TEST_NAME}.cpp)
   target_link_libraries(${TEST_NAME} ${PROJECT_NAME})
 endif()

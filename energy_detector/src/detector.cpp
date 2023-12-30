@@ -388,16 +388,26 @@ namespace rm_auto_aim
       float height = std::abs(pt2.y - pt1.y);
       angle = std::atan2(pt2.y - pt1.y, pt2.x - pt1.x);
       angle = angle * 180.0f / CV_PI;
-      cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1);
-      cv::Point2f offset1(width * 0.5f, -height * 0.5f);
-      cv::Point2f offset2(-width * 0.5f, height * 0.5f);
-      cv::Point2f rotatedPt1 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset1.x + rotationMatrix.at<double>(0, 1) * offset1.y,
-                                                    rotationMatrix.at<double>(1, 0) * offset1.x + rotationMatrix.at<double>(1, 1) * offset1.y);
-      cv::Point2f rotatedPt2 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset2.x + rotationMatrix.at<double>(0, 1) * offset2.y,
-                                                    rotationMatrix.at<double>(1, 0) * offset2.x + rotationMatrix.at<double>(1, 1) * offset2.y);
+      std::cout<<"angle"<<angle<<std::endl;
 
-      Point_2.emplace_back(rotatedPt1);
-      Point_2.emplace_back(rotatedPt2);
+      cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1);
+      // cv::Point2f offset1(width * 0.5f, -height * 0.5f);
+      // cv::Point2f offset2(-width * 0.5f, height * 0.5f);
+      // cv::Point2f rotatedPt1 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset1.x + rotationMatrix.at<double>(0, 1) * offset1.y,
+      //                                               rotationMatrix.at<double>(1, 0) * offset1.x + rotationMatrix.at<double>(1, 1) * offset1.y);
+      // cv::Point2f rotatedPt2 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset2.x + rotationMatrix.at<double>(0, 1) * offset2.y,
+      //                                               rotationMatrix.at<double>(1, 0) * offset2.x + rotationMatrix.at<double>(1, 1) * offset2.y);
+      std::vector<cv::Point2f> points;
+      points.push_back(pt1);
+      points.push_back(pt2);
+
+      // 逆向旋转已知的两个对角点
+      std::vector<cv::Point2f> rotatedPoints;
+      cv::transform(points, rotatedPoints, rotationMatrix);
+      Point_2.emplace_back(rotatedPoints[0]);
+      Point_2.emplace_back(rotatedPoints[1]);
+      // Point_2.emplace_back(rotatedPt1);
+      // Point_2.emplace_back(rotatedPt2);
       return Point_2;
     };
     std::vector<Leaf> result;
@@ -429,15 +439,15 @@ namespace rm_auto_aim
         // 2. 0 3关键点有效，1 4 关键点缺少一个以上： 算 0 3 关键点的中点
         keypoints_center = (leaf.kpt[0] + leaf.kpt[3]) * 0.5;
         pair_point = Get_Point(leaf.kpt[0], leaf.kpt[3]);
-        if (angle > 0 && angle < 180)
-        {
-          leaf.kpt[1] = pair_point.at(1);
-          leaf.kpt[4] = pair_point.at(0);
-        }
-        else
+        if (angle > 0 && angle < 150)
         {
           leaf.kpt[1] = pair_point.at(0);
           leaf.kpt[4] = pair_point.at(1);
+        }
+        else
+        {
+          leaf.kpt[1] = pair_point.at(1);
+          leaf.kpt[4] = pair_point.at(0);
         }
       }
       else if (
@@ -446,15 +456,15 @@ namespace rm_auto_aim
         // 3. 1 4关键点有效，0 3 关键点缺少一个以上： 算 1 4 关键点的中点
         keypoints_center = (leaf.kpt[1] + leaf.kpt[4]) * 0.5;
         pair_point = Get_Point(leaf.kpt[1], leaf.kpt[4]);
-        if (angle > 0 && angle < 180)
-        {
-          leaf.kpt[0] = pair_point.at(0);
-          leaf.kpt[3] = pair_point.at(1);
-        }
-        else
+        if (angle > 0 && angle < 150)
         {
           leaf.kpt[0] = pair_point.at(1);
           leaf.kpt[3] = pair_point.at(0);
+        }
+        else
+        {
+          leaf.kpt[0] = pair_point.at(0);
+          leaf.kpt[3] = pair_point.at(1);
         }
       }
       else

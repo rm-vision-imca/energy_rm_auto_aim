@@ -30,7 +30,7 @@ namespace rm_auto_aim{
 class EnergyDetector : public rclcpp::Node {
 public:
     EnergyDetector(const rclcpp::NodeOptions& options);
-
+    cv::Mat VideoTest(cv::Mat &img);
 private:
     void ImageCallBack(const sensor_msgs::msg::Image::SharedPtr _ros_image);
     void createDebugPublishers();

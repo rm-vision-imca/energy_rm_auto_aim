@@ -1,4 +1,5 @@
 #include "energy_detector/energy_detector_node.hpp"
+#include "geometry_msgs/msg/point.hpp"
 namespace rm_auto_aim
 {
   EnergyDetector::EnergyDetector(const rclcpp::NodeOptions &options)
@@ -8,7 +9,7 @@ namespace rm_auto_aim
     RCLCPP_INFO(this->get_logger(), "<节点初始化> 能量机关检测器");
     // Detector
     detector_ = initDetector();
-
+    RCLCPP_INFO(this->get_logger(), "<节点初始化> 检测器参数加载成功");
     // Visualization Marker Publisher 可视化
     // See http://wiki.ros.org/rviz/DisplayTypes/Marker
     leaf_marker_.ns = "leafs";
@@ -20,7 +21,7 @@ namespace rm_auto_aim
     leaf_marker_.color.g = 0.5;
     leaf_marker_.color.b = 1.0;
     leaf_marker_.lifetime = rclcpp::Duration::from_seconds(0.1); // 生命周期0.1s
-
+    RCLCPP_INFO(this->get_logger(), "<节点初始化> 可视化参数加载成功");
     marker_pub_ =
         this->create_publisher<visualization_msgs::msg::MarkerArray>("/energy/detector/marker", 10);
     debug_ = this->declare_parameter("debug", false);
@@ -52,8 +53,31 @@ namespace rm_auto_aim
     img_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
         "/image_raw", rclcpp::SensorDataQoS(),
         std::bind(&EnergyDetector::ImageCallBack, this, std::placeholders::_1));
+    leafs_pub_ = this->create_publisher<auto_aim_interfaces::msg::Leafs>("/detector/leafs", rclcpp::SensorDataQoS());
+    RCLCPP_INFO(this->get_logger(), "<节点初始化> 能量机关检测器完成");
   }
 
+  cv::Mat EnergyDetector::VideoTest(cv::Mat &img)
+  {
+    cv::Mat result_img = img.clone();
+    auto leafs = detector_->detect(img);
+    detector_->drawRuselt(result_img);
+    auto_aim_interfaces::msg::Leaf leaf_msg;
+    for (const auto &leaf : leafs)
+    {
+      // leaf info
+      leaf_msg.leaf_center.x = 0;
+      leaf_msg.leaf_center.y = leaf.kpt[5].y;
+      leaf_msg.leaf_center.z = leaf.kpt[5].x;
+      // R info
+      leaf_msg.r_center.x = 0;
+      leaf_msg.r_center.y = leaf.kpt[2].y;
+      leaf_msg.r_center.z = leaf.kpt[2].x;
+      leafs_msg_.leafs.emplace_back(leaf_msg);
+    }
+    leafs_pub_->publish(leafs_msg_);
+    return result_img;
+  }
   void EnergyDetector::ImageCallBack(const sensor_msgs::msg::Image::SharedPtr img_msg)
   {
     auto leafs = detectLeafs(img_msg);
@@ -142,9 +166,12 @@ namespace rm_auto_aim
   {
     rcl_interfaces::msg::ParameterDescriptor param_desc;
     param_desc.description = "0-RED, 1-BLUE";
+    param_desc.integer_range.resize(1);
+    param_desc.integer_range[0].step = 1;
     param_desc.integer_range[0].from_value = 0;
     param_desc.integer_range[0].to_value = 1;
-    auto detect_color = declare_parameter("detect_color", RED, param_desc);
+    RCLCPP_INFO(this->get_logger(), "<节点初始化> 检测器参数加载中");
+    auto detect_color = declare_parameter("detect_color", BLUE, param_desc);
     auto detector = std::make_unique<Detector>(detect_color);
     return detector;
   }

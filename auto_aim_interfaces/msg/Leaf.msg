@@ -1,0 +1,4 @@
+geometry_msgs/Pose pose
+float32 distance_to_image_center
+geometry_msgs/Point leaf_center
+geometry_msgs/Point r_center

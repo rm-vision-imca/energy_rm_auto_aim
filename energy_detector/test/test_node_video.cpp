@@ -1,4 +1,3 @@
-
 #include <string>
 #include "energy_detector/detector.hpp"
 #include "gtest/gtest.h"
@@ -6,6 +5,7 @@
 #include <rclcpp/node_options.hpp>
 #include <rclcpp/utilities.hpp>
 #include "energy_detector/energy_detector_node.hpp"
+#include "auto_aim_interfaces/msg/tracker2_d.hpp"
 using namespace rm_auto_aim;
 TEST(energy_detector, test_node_video)
 {
@@ -16,41 +16,38 @@ TEST(energy_detector, test_node_video)
 #define TEST_DIR
 #endif
     rclcpp::NodeOptions options;
+    cv::Point2f pre_Point;
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
+    auto Test_node = std::make_shared<rclcpp::Node>("Test_node");
+    auto Test_Sub = Test_node->create_subscription<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget", 10, [&](const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
+                                                                                        {
+        RCLCPP_INFO(Test_node->get_logger(),"x:%.2f y:%.2f",Point->x,Point->y);
+        pre_Point.x=Point->x;
+        pre_Point.y=Point->y;
+        std::cout<<Point->x<<" "<<Point->y<<std::endl; });
     std::string video_path = std::string(TEST_DIR) + "/video/2xfile.mp4";
-    std::cout<<"读取视频中\n";
+    std::cout << "读取视频中\n";
     cv::VideoCapture cap(video_path);
-    std::cout<<"初始化成功\n";
-    cv::Point2f cp;
-    // auto predict_sub=node->create_subscription<geometry_msgs::msg::Point>("tracker/LeafTarget",rclcpp::SensorDataQoS(),[&](const geometry_msgs::msg::Point::ConstPtr msg){
-    //     cp.x=msg->z;
-    //     cp.y=msg->y;
-    // });
-    std::cout<<"初始化成功\n";
+    std::cout << "初始化成功\n";
+
     while (true)
     {
+        rclcpp::spin_some(Test_node);
         cv::Mat frame;
         cap >> frame;
         if (frame.empty())
-        {
             break;
-        }
-        cv::imshow("src",frame);
+        cv::imshow("src", frame);
         cv::waitKey(10);
         cv::Mat color_frame = frame.clone();
-        color_frame=node->VideoTest(color_frame);
-        cv::imshow("color_frame",color_frame);
-        cv::waitKey(10);
-        cv::Mat predict_img=color_frame.clone();
-        cv::circle(predict_img,cp,5,cv::Scalar(255,255,255),-1);
-        cv::imshow("predict_img",predict_img);
+        color_frame = node->VideoTest(color_frame);
+        cv::circle(color_frame, pre_Point, 5, cv::Scalar(255, 255, 255), -1);
+        cv::imshow("color_frame", color_frame);
         cv::waitKey(10);
         if (!cap.read(frame))
             break;
     }
-    node.reset();
 }
-
 int main(int argc, char **argv)
 {
     testing::InitGoogleTest(&argc, argv);

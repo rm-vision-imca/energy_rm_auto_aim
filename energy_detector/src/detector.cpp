@@ -388,7 +388,7 @@ namespace rm_auto_aim
       float height = std::abs(pt2.y - pt1.y);
       angle = std::atan2(pt2.y - pt1.y, pt2.x - pt1.x);
       angle = angle * 180.0f / CV_PI;
-      std::cout<<"angle"<<angle<<std::endl;
+      //std::cout<<"angle"<<angle<<std::endl;
 
       cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1);
       // cv::Point2f offset1(width * 0.5f, -height * 0.5f);
@@ -439,7 +439,7 @@ namespace rm_auto_aim
         // 2. 0 3关键点有效，1 4 关键点缺少一个以上： 算 0 3 关键点的中点
         keypoints_center = (leaf.kpt[0] + leaf.kpt[3]) * 0.5;
         pair_point = Get_Point(leaf.kpt[0], leaf.kpt[3]);
-        if (angle > 0 && angle < 150)
+        if (angle > 0 && angle < 180)
         {
           leaf.kpt[1] = pair_point.at(0);
           leaf.kpt[4] = pair_point.at(1);
@@ -456,15 +456,15 @@ namespace rm_auto_aim
         // 3. 1 4关键点有效，0 3 关键点缺少一个以上： 算 1 4 关键点的中点
         keypoints_center = (leaf.kpt[1] + leaf.kpt[4]) * 0.5;
         pair_point = Get_Point(leaf.kpt[1], leaf.kpt[4]);
-        if (angle > 0 && angle < 150)
-        {
-          leaf.kpt[0] = pair_point.at(1);
-          leaf.kpt[3] = pair_point.at(0);
-        }
-        else
+        if (angle > 0 && angle < 180)
         {
           leaf.kpt[0] = pair_point.at(0);
           leaf.kpt[3] = pair_point.at(1);
+        }
+        else
+        {
+          leaf.kpt[0] = pair_point.at(1);
+          leaf.kpt[3] = pair_point.at(0);
         }
       }
       else

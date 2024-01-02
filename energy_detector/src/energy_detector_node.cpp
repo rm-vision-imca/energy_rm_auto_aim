@@ -59,6 +59,7 @@ namespace rm_auto_aim
 
   cv::Mat EnergyDetector::VideoTest(cv::Mat &img)
   {
+    leafs_msg_.leafs.clear();
     cv::Mat result_img = img.clone();
     auto leafs = detector_->detect(img);
     detector_->drawRuselt(result_img);
@@ -73,6 +74,7 @@ namespace rm_auto_aim
       leaf_msg.r_center.x = 0;
       leaf_msg.r_center.y = leaf.kpt[2].y;
       leaf_msg.r_center.z = leaf.kpt[2].x;
+      leaf_msg.prob=leaf.prob;
       leafs_msg_.leafs.emplace_back(leaf_msg);
     }
     leafs_pub_->publish(leafs_msg_);
@@ -100,6 +102,9 @@ namespace rm_auto_aim
         leaf_msg.r_center.x = 0;
         leaf_msg.r_center.y = leaf.kpt[2].y;
         leaf_msg.r_center.z = leaf.kpt[2].x;
+
+        //prob
+        leaf_msg.prob=leaf.prob;
 
         cv::Mat rvec, tvec;
         bool success = pnp_solver_->solvePnP_(leaf, rvec, tvec);

@@ -10,8 +10,12 @@
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>target_msg</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>message_filters</depend>
   <depend>auto_aim_interfaces</depend>
-  <depend>serial_interface</depend>
+  <depend>energy_detector</depend>
   
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

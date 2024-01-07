@@ -19,7 +19,7 @@ TEST(energy_detector, test_node_video)
     cv::Point2f pre_Point;
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
     auto Test_node = std::make_shared<rclcpp::Node>("Test_node");
-    auto Test_Sub = Test_node->create_subscription<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget", rclcpp::SensorDataQoS(), [&](const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
+    auto Test_Sub = Test_node->create_subscription<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget2D", rclcpp::SensorDataQoS(), [&](const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
                                                                                         {
         RCLCPP_INFO(Test_node->get_logger(),"x:%.2f y:%.2f",Point->x,Point->y);
         pre_Point.x=Point->x;

@@ -26,6 +26,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/DebugLeafs.msg"
   "srv/TrackingMode.srv"
   "msg/Tracker2D.msg"
+  "msg/EnTarget.msg"
   DEPENDENCIES
     std_msgs
     geometry_msgs

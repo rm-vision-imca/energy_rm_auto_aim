@@ -75,8 +75,11 @@ namespace rm_auto_aim
       leaf_msg.r_center.y = leaf.kpt[2].y;
       leaf_msg.r_center.z = leaf.kpt[2].x;
       leaf_msg.prob=leaf.prob;
+      //pose info
       leafs_msg_.leafs.emplace_back(leaf_msg);
     }
+    leafs_msg_.header.stamp=this->now();
+    leafs_msg_.header.frame_id="image";
     leafs_pub_->publish(leafs_msg_);
     return result_img;
   }
@@ -196,9 +199,9 @@ namespace rm_auto_aim
     if (debug_)
     {
       leafs_data_pub->publish(detector_->debug_leafs);
+      cv::circle(img, cam_center_, 5, cv::Scalar(255, 0, 0), 2);
       detector_->drawRuselt(img);
       // Draw camera center
-      cv::circle(img, cam_center_, 5, cv::Scalar(255, 0, 0), 2);
       // Draw latency
       std::stringstream latency_ss;
       latency_ss << "Latency: " << std::fixed << std::setprecision(2) << latency << "ms";

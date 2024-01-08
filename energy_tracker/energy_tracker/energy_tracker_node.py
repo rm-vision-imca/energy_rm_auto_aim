@@ -38,9 +38,11 @@ class energy_tracker(Node):
         # init info
         self.is_start = True
         self.moveMode = mode.big
-
+        self.v = 710  # m/s
         # self.freq = 50
-        self.observer = angleObserver(clockMode=clock.anticlockwise)
+        self.color=self.declare_parameter("detect_color","BLUE").value
+        self.color=self.get_parameter("detect_color").value
+        self.observer = angleObserver(clockMode=clock.anticlockwise) if color=="BLUE" else angleObserver(clockMode=clock.clockwise)
 
         # time info
         self.time = Time()
@@ -52,8 +54,7 @@ class energy_tracker(Node):
         self.tf2_listener = tf2_ros.TransformListener(self.tf2_buffer_, self)
         self.target_frame = self.declare_parameter(
             "target_frame", "odom").value
-        self.debug_=self.declare_parameter("debug",value=False)
-        
+        self.debug_ = self.declare_parameter("debug", value=False)
 
     def predict_mode_service_callback(self, mode_request, mode_response):
         if mode_request.mode == 1:
@@ -82,6 +83,12 @@ class energy_tracker(Node):
         elif len_2 < 0:
             return len_1
 
+    def Gravity_compensation(self, bottom_len, v, angle_0) -> float():
+        g = 9.788  # m/s
+        t = bottom_len/(v*np.cos(np.deg2rad(angle_0)))
+        h = g*t**2/2
+        return float(h)
+
     def LeafsCallback(self, leafs_msg):
         # find the max prob's leaf
         if (len(leafs_msg.leafs) > 0):
@@ -101,7 +108,9 @@ class energy_tracker(Node):
                 self.dt = float(self.dt/1e9)
                 self.dt_error = 0.05
                 self.freq = int(1.0/self.dt)*10
+                self.freq = 80  # fixed freq(fps)
                 self.get_logger().info("Fixed_dt={},Fix_Fps={}".format(self.dt, self.freq))
+                
                 if self.moveMode == mode.small:
                     self.predictor = smallPredictor(
                         freq=self.freq, deltaT=self.dt+self.dt_error)
@@ -138,9 +147,8 @@ class energy_tracker(Node):
                 angle = np.deg2rad(deltaAngle)
                 x = leaf_.pose.position.x
                 y = leaf_.pose.position.y
-                leaf_.pose.position.x = x*np.cos(angle)-y*np.sin(angle)
-                leaf_.pose.position.y = x*np.sin(angle)+y*np.cos(angle)
-                leaf_.pose.position.z = leaf_.pose.position.z
+                leaf_.pose.position.x = x*np.cos(angle)-z*np.sin(angle)
+                leaf_.pose.position.z = x*np.sin(angle)+z*np.cos(angle)
                 # solve the pose in predicting
                 ps = PoseStamped()
                 ps.header = leafs_msg.header
@@ -157,12 +165,15 @@ class energy_tracker(Node):
                 yaw角和pitch角度的解算
                 '''
                 px, py, pz = leaf_.pose.position.x, leaf_.pose.position.y, leaf_.pose.position.z
+                bottom_len = np.sqrt(py**2, px**2)
                 Target.pitch = np.rad2deg(
-                    np.arctan2(py, np.sqrt(px**2, pz**2)))
-                Target.yaw = np.rad2deg(np.arctan2(px, pz))
+                    np.arctan2(pz, bottom_len))  # pitch angle
+                Target.pitch = Target.pitch = np.rad2deg(
+                    np.arctan2(pz+self.Gravity_compensation(bottom_len=bottom_len, v=self.v, angle_0=Target.pitch), bottom_len))
+                Target.yaw = np.rad2deg(np.arctan2(px, py))  # yaw angle
                 Target.position.x, Target.position.y, Target.position.z = px, py, pz
-                Target.header.stamp=leafs_msg.header.stamp
-                Target.header.frame_id=self.target_frame
+                Target.header.stamp = leafs_msg.header.stamp
+                Target.header.frame_id = self.target_frame
                 if self.debug_:
                     self.get_logger().info("pitch={},yaw={}".format(Target.pitch, Target.yaw))
                 self.Target_pub.publish(Target)

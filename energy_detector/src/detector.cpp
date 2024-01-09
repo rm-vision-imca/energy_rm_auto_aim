@@ -391,12 +391,6 @@ namespace rm_auto_aim
       //std::cout<<"angle"<<angle<<std::endl;
 
       cv::Mat rotationMatrix = cv::getRotationMatrix2D(center, angle, 1);
-      // cv::Point2f offset1(width * 0.5f, -height * 0.5f);
-      // cv::Point2f offset2(-width * 0.5f, height * 0.5f);
-      // cv::Point2f rotatedPt1 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset1.x + rotationMatrix.at<double>(0, 1) * offset1.y,
-      //                                               rotationMatrix.at<double>(1, 0) * offset1.x + rotationMatrix.at<double>(1, 1) * offset1.y);
-      // cv::Point2f rotatedPt2 = center + cv::Point2f(rotationMatrix.at<double>(0, 0) * offset2.x + rotationMatrix.at<double>(0, 1) * offset2.y,
-      //                                               rotationMatrix.at<double>(1, 0) * offset2.x + rotationMatrix.at<double>(1, 1) * offset2.y);
       std::vector<cv::Point2f> points;
       points.push_back(pt1);
       points.push_back(pt2);
@@ -406,8 +400,6 @@ namespace rm_auto_aim
       cv::transform(points, rotatedPoints, rotationMatrix);
       Point_2.emplace_back(rotatedPoints[0]);
       Point_2.emplace_back(rotatedPoints[1]);
-      // Point_2.emplace_back(rotatedPt1);
-      // Point_2.emplace_back(rotatedPt2);
       return Point_2;
     };
     std::vector<Leaf> result;
@@ -441,13 +433,13 @@ namespace rm_auto_aim
         pair_point = Get_Point(leaf.kpt[0], leaf.kpt[3]);
         if (angle > 0 && angle < 180)
         {
-          leaf.kpt[1] = pair_point.at(0);
-          leaf.kpt[4] = pair_point.at(1);
+          leaf.kpt[1] = valid_keypoints[1]?leaf.kpt[1]:pair_point.at(0);
+          leaf.kpt[4] = valid_keypoints[4]?leaf.kpt[4]:pair_point.at(1);
         }
         else
         {
-          leaf.kpt[1] = pair_point.at(1);
-          leaf.kpt[4] = pair_point.at(0);
+          leaf.kpt[1] = valid_keypoints[1]?leaf.kpt[1]:pair_point.at(1);
+          leaf.kpt[4] = valid_keypoints[4]?leaf.kpt[4]:pair_point.at(0);
         }
       }
       else if (
@@ -458,13 +450,13 @@ namespace rm_auto_aim
         pair_point = Get_Point(leaf.kpt[1], leaf.kpt[4]);
         if (angle > 0 && angle < 180)
         {
-          leaf.kpt[0] = pair_point.at(0);
-          leaf.kpt[3] = pair_point.at(1);
+          leaf.kpt[0] = valid_keypoints[0]?leaf.kpt[0]:pair_point.at(0);
+          leaf.kpt[3] = valid_keypoints[3]?leaf.kpt[3]:pair_point.at(1);
         }
         else
         {
-          leaf.kpt[0] = pair_point.at(1);
-          leaf.kpt[3] = pair_point.at(0);
+          leaf.kpt[0] = valid_keypoints[0]?leaf.kpt[0]:pair_point.at(1);
+          leaf.kpt[3] = valid_keypoints[3]?leaf.kpt[3]:pair_point.at(0);
         }
       }
       else
@@ -511,9 +503,11 @@ namespace rm_auto_aim
           cv::FILLED);
       cv::putText(src, label, cv::Point(x0, y0), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(), 1.5);
       cv::rectangle(src, leaf.rect, cv::Scalar(255, 255, 0), 3);
+      int i=0;
       for (auto &p : leaf.kpt)
       {
-        cv::circle(src, p, 5, cv::Scalar(255, 255, 0), 3);
+        cv::circle(src, p, 5, cv::Scalar(255, 0, 0), 3);
+        // if(i++==4)cv::circle(src, p, 5, cv::Scalar(255, 255, 255), 3);
       }
     }
   }

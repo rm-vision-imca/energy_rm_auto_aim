@@ -6,7 +6,51 @@
 #include <rclcpp/utilities.hpp>
 #include "energy_detector/energy_detector_node.hpp"
 #include "auto_aim_interfaces/msg/tracker2_d.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
 using namespace rm_auto_aim;
+
+class Test_node : public rclcpp::Node
+{
+public:
+    cv::Point2f pre_Point;
+    Test_node(const rclcpp::NodeOptions &options) : Node("TestNode", options)
+    {
+        timestamp_offset_ = this->declare_parameter("timestamp_offset", 0.0);
+        Test_Sub = this->create_subscription<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget2D", rclcpp::SensorDataQoS(), std::bind(&Test_node::Test_SubCallback, this, std::placeholders::_1));
+        tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+        receive_thread_ = std::thread(&Test_node::receiveData, this);
+    }
+
+private:
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    void receiveData()
+    {
+        while (rclcpp::ok)
+        {
+            geometry_msgs::msg::TransformStamped t;
+            timestamp_offset_ = get_parameter("timestamp_offset").as_double();
+            t.header.stamp = this->now() + rclcpp::Duration::from_seconds(timestamp_offset_);
+            t.header.frame_id = "odom";
+            t.child_frame_id = "gimbal_link";
+            tf2::Quaternion q;
+            q.setRPY(0, 0, 0);
+            t.transform.rotation = tf2::toMsg(q);
+            tf_broadcaster_->sendTransform(t);
+        }
+    }
+    double timestamp_offset_ = 0;
+    rclcpp::Subscription<auto_aim_interfaces::msg::Tracker2D>::SharedPtr Test_Sub;
+    void Test_SubCallback(const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
+    {
+        RCLCPP_INFO(this->get_logger(), "x:%.2f y:%.2f", Point->x, Point->y);
+        pre_Point.x = Point->x;
+        pre_Point.y = Point->y;
+        std::cout << Point->x << " " << Point->y << std::endl;
+    }
+    std::thread receive_thread_;
+};
+
 TEST(energy_detector, test_node_video)
 {
 #ifndef VIDEO
@@ -16,15 +60,10 @@ TEST(energy_detector, test_node_video)
 #define TEST_DIR
 #endif
     rclcpp::NodeOptions options;
-    cv::Point2f pre_Point;
+
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
-    auto Test_node = std::make_shared<rclcpp::Node>("Test_node");
-    auto Test_Sub = Test_node->create_subscription<auto_aim_interfaces::msg::Tracker2D>("tracker/LeafTarget2D", rclcpp::SensorDataQoS(), [&](const auto_aim_interfaces::msg::Tracker2D::SharedPtr Point)
-                                                                                        {
-        RCLCPP_INFO(Test_node->get_logger(),"x:%.2f y:%.2f",Point->x,Point->y);
-        pre_Point.x=Point->x;
-        pre_Point.y=Point->y;
-        std::cout<<Point->x<<" "<<Point->y<<std::endl; });
+    auto test_node = std::make_shared<Test_node>(options);
+
     std::string video_path = std::string(TEST_DIR) + "/video/2xfile.mp4";
     std::cout << "读取视频中\n";
     cv::VideoCapture cap(video_path);
@@ -32,7 +71,8 @@ TEST(energy_detector, test_node_video)
 
     while (true)
     {
-        rclcpp::spin_some(Test_node);
+        rclcpp::spin_some(node);
+        rclcpp::spin_some(test_node);
         cv::Mat frame;
         cap >> frame;
         if (frame.empty())
@@ -41,7 +81,7 @@ TEST(energy_detector, test_node_video)
         cv::waitKey(10);
         cv::Mat color_frame = frame.clone();
         color_frame = node->VideoTest(color_frame);
-        cv::circle(color_frame, pre_Point, 5, cv::Scalar(255, 255, 255), -1);
+        cv::circle(color_frame, test_node->pre_Point, 5, cv::Scalar(255, 255, 255), -1);
         cv::imshow("color_frame", color_frame);
         cv::waitKey(10);
         if (!cap.read(frame))

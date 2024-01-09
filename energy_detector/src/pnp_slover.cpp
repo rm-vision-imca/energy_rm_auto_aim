@@ -26,10 +26,10 @@ namespace rm_auto_aim
         std::vector<cv::Point2f> image_leaf_points;
 
         // Fill in image points
-        image_leaf_points.emplace_back(leaf.kpt[1]);
-        image_leaf_points.emplace_back(leaf.kpt[0]);
-        image_leaf_points.emplace_back(leaf.kpt[4]);
         image_leaf_points.emplace_back(leaf.kpt[3]);
+        image_leaf_points.emplace_back(leaf.kpt[4]);
+        image_leaf_points.emplace_back(leaf.kpt[0]);
+        image_leaf_points.emplace_back(leaf.kpt[1]);
         return cv::solvePnP(energy_leaf_points_, image_leaf_points, camera_matrix_, dist_coeffs_, rvec, tvec, false, cv::SOLVEPNP_IPPE);
     }
 }

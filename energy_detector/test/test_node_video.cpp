@@ -34,7 +34,7 @@ private:
             t.header.frame_id = "odom";
             t.child_frame_id = "gimbal_link";
             tf2::Quaternion q;
-            q.setRPY(0, 0, 0);
+            q.setRPY(0.1, 0.1, 0.1);
             t.transform.rotation = tf2::toMsg(q);
             tf_broadcaster_->sendTransform(t);
         }

@@ -76,6 +76,10 @@ namespace rm_auto_aim
       leaf_msg.r_center.z = leaf.kpt[2].x;
       leaf_msg.prob=leaf.prob;
       //pose info
+
+      leaf_msg.pose.position.x=0;
+      leaf_msg.pose.position.y=leaf.kpt[2].y;
+      leaf_msg.pose.position.z=leaf.kpt[2].x;
       leafs_msg_.leafs.emplace_back(leaf_msg);
     }
     leafs_msg_.header.stamp=this->now();

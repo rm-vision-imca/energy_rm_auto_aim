@@ -40,10 +40,11 @@ class energy_tracker(Node):
         self.moveMode = mode.big
         self.v = 710  # m/s
         # self.freq = 50
-        self.color=self.declare_parameter("detect_color","BLUE").value
-        self.color=self.get_parameter("detect_color").value
-        self.observer = angleObserver(clockMode=clock.anticlockwise) if color=="BLUE" else angleObserver(clockMode=clock.clockwise)
-
+        self.color = self.declare_parameter("detect_color", "BLUE").value
+        self.color = self.get_parameter("detect_color").get_parameter_value().string_value
+        self.observer = angleObserver(
+            clockMode=clock.anticlockwise) if self.color == "BLUE" else angleObserver(clockMode=clock.clockwise)
+        # self.observer=angleObserver(clockMode=clock.anticlockwise)
         # time info
         self.time = Time()
         self.lasttime = Time()
@@ -54,7 +55,7 @@ class energy_tracker(Node):
         self.tf2_listener = tf2_ros.TransformListener(self.tf2_buffer_, self)
         self.target_frame = self.declare_parameter(
             "target_frame", "odom").value
-        self.debug_ = self.declare_parameter("debug", value=False)
+        self.debug_ = self.declare_parameter("debug", value=False).get_parameter_value().bool_value
 
     def predict_mode_service_callback(self, mode_request, mode_response):
         if mode_request.mode == 1:
@@ -110,7 +111,7 @@ class energy_tracker(Node):
                 self.freq = int(1.0/self.dt)*10
                 self.freq = 80  # fixed freq(fps)
                 self.get_logger().info("Fixed_dt={},Fix_Fps={}".format(self.dt, self.freq))
-                
+
                 if self.moveMode == mode.small:
                     self.predictor = smallPredictor(
                         freq=self.freq, deltaT=self.dt+self.dt_error)
@@ -140,13 +141,14 @@ class energy_tracker(Node):
                 Target2d.x = float(x)
                 Target2d.y = float(y)
                 self.Target_pub2D.publish(Target2d)
+                
                 if self.debug_:
                     self.get_logger().info("predict_x={},predict_y={}".format(x, y))
-
-                Target = EnTarget()
+                
                 angle = np.deg2rad(deltaAngle)
                 x = leaf_.pose.position.x
                 y = leaf_.pose.position.y
+                z = leaf_.pose.position.z
                 leaf_.pose.position.x = x*np.cos(angle)-z*np.sin(angle)
                 leaf_.pose.position.z = x*np.sin(angle)+z*np.cos(angle)
                 # solve the pose in predicting
@@ -154,8 +156,9 @@ class energy_tracker(Node):
                 ps.header = leafs_msg.header
                 ps.pose = leaf_.pose
                 try:
-                    leaf_.pose = self.tf2_buffer_.transform(
-                        ps, self.target_frame, timeout=rclpy.duration.Duration(seconds=1)).pose
+                    transf = self.tf2_buffer_.lookup_transform(
+                        "odom", "gimbal_link", rclpy.time.Time())
+                    leaf_.pose = do_transform_pose(leaf_.pose, transf)
                 except:
                     self.get_logger().error("Error while transforming {}".format(
                         tf2_ros.ExtrapolationException()))
@@ -164,8 +167,13 @@ class energy_tracker(Node):
                 @TODO
                 yaw角和pitch角度的解算
                 '''
-                px, py, pz = leaf_.pose.position.x, leaf_.pose.position.y, leaf_.pose.position.z
-                bottom_len = np.sqrt(py**2, px**2)
+                #self.get_logger().info("transf.transform{}".format(transf.transform))
+                Target = EnTarget()
+                px = leaf_.pose.position.x
+                py = leaf_.pose.position.y
+                pz = leaf_.pose.position.z
+                self.get_logger().info("px={},py={},pz={}".format(px,py,pz))
+                bottom_len = np.sqrt(py**2+px**2)
                 Target.pitch = np.rad2deg(
                     np.arctan2(pz, bottom_len))  # pitch angle
                 Target.pitch = Target.pitch = np.rad2deg(

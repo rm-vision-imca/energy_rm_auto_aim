@@ -41,7 +41,8 @@ class energy_tracker(Node):
         self.v = 710  # m/s
         # self.freq = 50
         self.color = self.declare_parameter("detect_color", "BLUE").value
-        self.color = self.get_parameter("detect_color").get_parameter_value().string_value
+        self.color = self.get_parameter(
+            "detect_color").get_parameter_value().string_value
         self.observer = angleObserver(
             clockMode=clock.anticlockwise) if self.color == "BLUE" else angleObserver(clockMode=clock.clockwise)
         # self.observer=angleObserver(clockMode=clock.anticlockwise)
@@ -55,7 +56,10 @@ class energy_tracker(Node):
         self.tf2_listener = tf2_ros.TransformListener(self.tf2_buffer_, self)
         self.target_frame = self.declare_parameter(
             "target_frame", "odom").value
-        self.debug_ = self.declare_parameter("debug", value=False).get_parameter_value().bool_value
+        self.debug_ = self.declare_parameter(
+            "debug", value=False).get_parameter_value().bool_value
+        # tracking info
+        self.lastPosition = None
 
     def predict_mode_service_callback(self, mode_request, mode_response):
         if mode_request.mode == 1:
@@ -136,22 +140,25 @@ class energy_tracker(Node):
                 x = np.cos(angle) * self.radius  # 提前x 秒后的扇叶中心的x
                 y = np.sin(angle) * self.radius  # 提前x 秒后的扇叶中心的y
                 x, y = np.array([x, y]) + R_p  # 得到最终的预测扇叶中心
-                self.anglev = deltaAngle/self.dt
+
                 Target2d = Tracker2D()
                 Target2d.x = float(x)
                 Target2d.y = float(y)
                 self.Target_pub2D.publish(Target2d)
-                
+
                 if self.debug_:
                     self.get_logger().info("predict_x={},predict_y={}".format(x, y))
-                
+
                 angle = np.deg2rad(deltaAngle)
+                if leaf_.type=="INVALID" and self.lastPosition !=None:
+                    leaf_pose.position=self.lastPosition
                 x = leaf_.pose.position.x
                 y = leaf_.pose.position.y
                 z = leaf_.pose.position.z
                 leaf_.pose.position.x = x*np.cos(angle)-z*np.sin(angle)
                 leaf_.pose.position.z = x*np.sin(angle)+z*np.cos(angle)
-                # solve the pose in predicting
+                self.lastPosition=leaf_.pose.position
+                # tf2 trasform
                 ps = PoseStamped()
                 ps.header = leafs_msg.header
                 ps.pose = leaf_.pose
@@ -163,27 +170,26 @@ class energy_tracker(Node):
                     self.get_logger().error("Error while transforming {}".format(
                         tf2_ros.ExtrapolationException()))
                     return
-                '''
-                @TODO
-                yaw角和pitch角度的解算
-                '''
-                #self.get_logger().info("transf.transform{}".format(transf.transform))
+
+                # yaw角和pitch角度的解算
                 Target = EnTarget()
                 px = leaf_.pose.position.x
                 py = leaf_.pose.position.y
                 pz = leaf_.pose.position.z
-                self.get_logger().info("px={},py={},pz={}".format(px,py,pz))
+                self.get_logger().info("px={},py={},pz={}".format(px, py, pz))
                 bottom_len = np.sqrt(py**2+px**2)
                 Target.pitch = np.rad2deg(
                     np.arctan2(pz, bottom_len))  # pitch angle
                 Target.pitch = Target.pitch = np.rad2deg(
                     np.arctan2(pz+self.Gravity_compensation(bottom_len=bottom_len, v=self.v, angle_0=Target.pitch), bottom_len))
+
                 Target.yaw = np.rad2deg(np.arctan2(px, py))  # yaw angle
                 Target.position.x, Target.position.y, Target.position.z = px, py, pz
                 Target.header.stamp = leafs_msg.header.stamp
                 Target.header.frame_id = self.target_frame
                 if self.debug_:
                     self.get_logger().info("pitch={},yaw={}".format(Target.pitch, Target.yaw))
+
                 self.Target_pub.publish(Target)
 
 

@@ -80,6 +80,7 @@ namespace rm_auto_aim
       leaf_msg.pose.position.x=0;
       leaf_msg.pose.position.y=leaf.kpt[2].y;
       leaf_msg.pose.position.z=leaf.kpt[2].x;
+      leaf_msg.type=LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
       leafs_msg_.leafs.emplace_back(leaf_msg);
     }
     leafs_msg_.header.stamp=this->now();
@@ -112,15 +113,21 @@ namespace rm_auto_aim
 
         //prob
         leaf_msg.prob=leaf.prob;
+        //type
+        leaf_msg.type=LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
 
         cv::Mat rvec, tvec;
         bool success = pnp_solver_->solvePnP_(leaf, rvec, tvec);
         if (success)
         {
+          RCLCPP_INFO(this->get_logger(),"pnp success");
           // Fill pose
           leaf_msg.pose.position.x = tvec.at<double>(0);
           leaf_msg.pose.position.y = tvec.at<double>(1);
           leaf_msg.pose.position.z = tvec.at<double>(2);
+          if(debug_){
+            RCLCPP_INFO(this->get_logger(),"x:%.2f y:%.2f z:%.2f",leaf_msg.pose.position.x,leaf_msg.pose.position.y,leaf_msg.pose.position.z);
+          }
           // rvec to 3x3 rotation matrix
           cv::Mat rotation_matrix;
           cv::Rodrigues(rvec, rotation_matrix);
@@ -151,6 +158,7 @@ namespace rm_auto_aim
         else
         {
           RCLCPP_WARN(this->get_logger(), "PnP failed!");
+
         }
         // Publishing detected leafs
         leafs_pub_->publish(leafs_msg_);

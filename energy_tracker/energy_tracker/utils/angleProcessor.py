@@ -120,7 +120,7 @@ class FitStartDetect:
     思路是，间隔一定距离，计算Δy和Δx的比作为导数，
     """
 
-    def __init__(self, queue_capacity=15):
+    def __init__(self, queue_capacity=100):
         self.__queue_capacity = queue_capacity  # 计算Δy和Δx的间隔
         self.__queue = CircularQueue(queue_capacity)
         self.derivative = []  # 导数

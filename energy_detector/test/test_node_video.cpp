@@ -81,7 +81,7 @@ TEST(energy_detector, test_node_video)
         cv::waitKey(10);
         cv::Mat color_frame = frame.clone();
         color_frame = node->VideoTest(color_frame);
-        cv::circle(color_frame, test_node->pre_Point, 5, cv::Scalar(255, 255, 255), -1);
+        cv::circle(color_frame, test_node->pre_Point, 5, cv::Scalar(0, 0, 255), -1);
         cv::imshow("color_frame", color_frame);
         cv::waitKey(10);
         if (!cap.read(frame))

@@ -99,4 +99,4 @@ namespace rm_auto_aim
     static float sigmoid(float x) { return static_cast<float>(1.f / (1.f + exp(-x))); }
   };
 } // namespace rm_auto_aim
-#endif // GMASTER_CV_2023_ARMORNEWYOLO_H
+#endif // DETECTOR_HPP_

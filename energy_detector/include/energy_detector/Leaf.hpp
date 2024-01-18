@@ -3,7 +3,7 @@
 #include <opencv2/core.hpp>
 
 namespace rm_auto_aim{
-    
+    const std::string LEAF_TYPE_STR[2] = {"INVALID", "VALID"};
     const int RED=0;
     const int BLUE=1;
     enum class LeafType {INVALID=0,VALID=1};
@@ -12,6 +12,7 @@ namespace rm_auto_aim{
         cv::Rect_<float> rect;
         int label;
         float prob;
+        LeafType leaf_type;
     /*
     @param [0]top_left
     @param [1]bottom_left

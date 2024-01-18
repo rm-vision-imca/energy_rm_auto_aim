@@ -479,7 +479,8 @@ namespace rm_auto_aim
         }
         type = LeafType::VALID;
       }
-      if (type == LeafType::VALID)
+      if (type == LeafType::VALID)leaf.leaf_type=LeafType::VALID;
+      else leaf.leaf_type=LeafType::INVALID;
         result.emplace_back(leaf);
     }
     return result;
@@ -506,7 +507,7 @@ namespace rm_auto_aim
       int i=0;
       for (auto &p : leaf.kpt)
       {
-        cv::circle(src, p, 5, cv::Scalar(255, 0, 0), 3);
+        cv::circle(src, p, 5, cv::Scalar(255, 255, 255), 5);
         // if(i++==4)cv::circle(src, p, 5, cv::Scalar(255, 255, 255), 3);
       }
     }

@@ -63,8 +63,8 @@ TEST(energy_detector, test_node_video)
 
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
     auto test_node = std::make_shared<Test_node>(options);
-
-    std::string video_path = std::string(TEST_DIR) + "/video/2xfile.mp4";
+    std::string video_name[]={"buff_blue.mp4","2xfile.mp4","file.mp4"};
+    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[0];
     std::cout << "读取视频中\n";
     cv::VideoCapture cap(video_path);
     std::cout << "初始化成功\n";

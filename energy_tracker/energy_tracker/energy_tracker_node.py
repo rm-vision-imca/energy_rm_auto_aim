@@ -70,6 +70,9 @@ class energy_tracker(Node):
             self.moveMode = mode.person
         self.is_start = True
         mode_response.success = True
+        self.time = Time()
+        self.lasttime = Time()
+        self.frame_pass = 2
         return mode_response
 
     def GetpreLen(self, leaf, pre_leaf_center2D, deltaAngle):
@@ -150,14 +153,14 @@ class energy_tracker(Node):
                     self.get_logger().info("predict_x={},predict_y={}".format(x, y))
 
                 angle = np.deg2rad(deltaAngle)
-                if leaf_.type=="INVALID" and self.lastPosition !=None:
-                    leaf_pose.position=self.lastPosition
+                if leaf_.type == "INVALID" and self.lastPosition != None:
+                    leaf_pose.position = self.lastPosition
                 x = leaf_.pose.position.x
                 y = leaf_.pose.position.y
                 z = leaf_.pose.position.z
                 leaf_.pose.position.x = x*np.cos(angle)-z*np.sin(angle)
                 leaf_.pose.position.z = x*np.sin(angle)+z*np.cos(angle)
-                self.lastPosition=leaf_.pose.position
+                self.lastPosition = leaf_.pose.position
                 # tf2 trasform
                 ps = PoseStamped()
                 ps.header = leafs_msg.header

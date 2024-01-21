@@ -27,6 +27,7 @@ include_directories(
   include/energy_detector/
 
 )
+set(CMAKE_PREFIX_PATH  /opt/intel/openvino_2023)
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(OpenCV REQUIRED)

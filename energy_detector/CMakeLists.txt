@@ -21,9 +21,9 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_BINARY_DIR}
-  /opt/intel/openvino_2022/runtime/include/ie/
-  /opt/intel/openvino_2022/runtime/include/ngraph/
-  /opt/intel/openvino_2022/runtime/include/openvino/
+  /opt/intel/openvino_2023/runtime/include/ie/
+  /opt/intel/openvino_2023/runtime/include/ngraph/
+  /opt/intel/openvino_2023/runtime/include/openvino/
   include/energy_detector/
 
 )

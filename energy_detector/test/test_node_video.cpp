@@ -46,7 +46,7 @@ private:
         RCLCPP_INFO(this->get_logger(), "x:%.2f y:%.2f", Point->x, Point->y);
         pre_Point.x = Point->x;
         pre_Point.y = Point->y;
-        //std::cout << Point->x << " " << Point->y << std::endl;
+        std::cout << Point->x << " " << Point->y << std::endl;
     }
     std::thread receive_thread_;
 };
@@ -63,11 +63,11 @@ TEST(energy_detector, test_node_video)
 
     auto node = std::make_shared<rm_auto_aim::EnergyDetector>(options);
     auto test_node = std::make_shared<Test_node>(options);
-    std::string video_name[]={"buff_blue.mp4","2xfile.mp4","file.mp4","比赛打符高环数合集.mp4","环数检测视频.mp4","快速激活大能量机关视频.mp4","en1.mp4"};
-    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[5];
-    //std::cout << "读取视频中\n";
+    std::string video_name[]={"buff_blue.mp4","2xfile.mp4","file.mp4"};
+    std::string video_path = std::string(TEST_DIR) + "/video/"+video_name[0];
+    std::cout << "读取视频中\n";
     cv::VideoCapture cap(video_path);
-    //std::cout << "初始化成功\n";
+    std::cout << "初始化成功\n";
 
     while (true)
     {

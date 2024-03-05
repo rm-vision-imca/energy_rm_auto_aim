@@ -10,10 +10,10 @@ namespace rm_auto_aim
         // Unit: m
         constexpr double energy_half_y = ENERGY_LEAF_WIDTH / 2.0 / 1000.0;
         constexpr double energy_half_z = ENERGY_LEAF_HEIGHT / 2.0 / 1000.0;
-        energy_leaf_points_.emplace_back(cv::Point3f(0, energy_half_y, -energy_half_z));//BOTTOM_RIGHT
-        energy_leaf_points_.emplace_back(cv::Point3f(0, energy_half_y, energy_half_z));//TOP_RIGHT
-        energy_leaf_points_.emplace_back(cv::Point3f(0, -energy_half_y, energy_half_z));//TOP_LEFT
-        energy_leaf_points_.emplace_back(cv::Point3f(0, -energy_half_y, -energy_half_z));//BOTTOM_LEFT
+        energy_leaf_points_.emplace_back(cv::Point3f(0, energy_half_y, -energy_half_z));
+        energy_leaf_points_.emplace_back(cv::Point3f(0, energy_half_y, energy_half_z));
+        energy_leaf_points_.emplace_back(cv::Point3f(0, -energy_half_y, energy_half_z));
+        energy_leaf_points_.emplace_back(cv::Point3f(0, -energy_half_y, -energy_half_z));
     }
     float PnPSolver::calculateDistanceToCenter(const cv::Point2f &image_point)
     {
@@ -26,10 +26,10 @@ namespace rm_auto_aim
         std::vector<cv::Point2f> image_leaf_points;
 
         // Fill in image points
-        image_leaf_points.emplace_back(leaf.kpt[BOTTOM_RIGHT]);
-        image_leaf_points.emplace_back(leaf.kpt[TOP_RIGHT]);
-        image_leaf_points.emplace_back(leaf.kpt[TOP_LEFT]);
-        image_leaf_points.emplace_back(leaf.kpt[BOTTOM_LEFT]);
+        image_leaf_points.emplace_back(leaf.kpt[3]);
+        image_leaf_points.emplace_back(leaf.kpt[4]);
+        image_leaf_points.emplace_back(leaf.kpt[0]);
+        image_leaf_points.emplace_back(leaf.kpt[1]);
         return cv::solvePnP(energy_leaf_points_, image_leaf_points, camera_matrix_, dist_coeffs_, rvec, tvec, false, cv::SOLVEPNP_IPPE);
     }
 }

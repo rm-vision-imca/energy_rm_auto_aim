@@ -61,30 +61,32 @@ namespace rm_auto_aim
   {
     leafs_msg_.leafs.clear();
     cv::Mat result_img = img.clone();
+    auto final_time = this->now();
     auto leafs = detector_->detect(img);
+    auto latency = (this->now() - final_time).seconds() * 1000;
+    std::stringstream latency_ss;
+    latency_ss << "Latency: " << latency << "ms" << std::endl; // 计算图像处理的延迟输出到日志中
+    auto latency_s = latency_ss.str();
     detector_->drawRuselt(result_img);
+    cv::putText(
+          result_img, latency_s, cv::Point(10, 30), cv::FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 255, 0), 2);
     auto_aim_interfaces::msg::Leaf leaf_msg;
     for (const auto &leaf : leafs)
     {
       // leaf info
       leaf_msg.leaf_center.x = 0;
-      leaf_msg.leaf_center.y = leaf.kpt[5].y;
-      leaf_msg.leaf_center.z = leaf.kpt[5].x;
-      // R info
-      leaf_msg.r_center.x = 0;
-      leaf_msg.r_center.y = leaf.kpt[2].y;
-      leaf_msg.r_center.z = leaf.kpt[2].x;
-      leaf_msg.prob=leaf.prob;
-      //pose info
-
-      leaf_msg.pose.position.x=0;
-      leaf_msg.pose.position.y=leaf.kpt[2].y;
-      leaf_msg.pose.position.z=leaf.kpt[2].x;
-      leaf_msg.type=LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
+      leaf_msg.leaf_center.y = leaf.kpt[4].y;
+      leaf_msg.leaf_center.z = leaf.kpt[4].x;
+      leaf_msg.prob = leaf.prob;
+      // pose info
+      leaf_msg.pose.position.x = 0;
+      leaf_msg.pose.position.y = leaf.kpt[4].y;
+      leaf_msg.pose.position.z = leaf.kpt[4].x;
+      leaf_msg.type = LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
       leafs_msg_.leafs.emplace_back(leaf_msg);
     }
-    leafs_msg_.header.stamp=this->now();
-    leafs_msg_.header.frame_id="image";
+    leafs_msg_.header.stamp = this->now();
+    leafs_msg_.header.frame_id = "image";
     leafs_pub_->publish(leafs_msg_);
     return result_img;
   }
@@ -103,30 +105,32 @@ namespace rm_auto_aim
       {
         // leaf info
         leaf_msg.leaf_center.x = 0;
-        leaf_msg.leaf_center.y = leaf.kpt[5].y;
-        leaf_msg.leaf_center.z = leaf.kpt[5].x;
+        leaf_msg.leaf_center.y = leaf.kpt[4].y;
+        leaf_msg.leaf_center.z = leaf.kpt[4].x;
 
         // R info
-        leaf_msg.r_center.x = 0;
-        leaf_msg.r_center.y = leaf.kpt[2].y;
-        leaf_msg.r_center.z = leaf.kpt[2].x;
+        // leaf_msg.r_center.x = 0;
+        // leaf_msg.r_center.y = leaf.kpt[2].y;
+        // leaf_msg.r_center.z = leaf.kpt[2].x;
 
-        //prob
-        leaf_msg.prob=leaf.prob;
-        //type
-        leaf_msg.type=LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
+        // prob
+        leaf_msg.prob = leaf.prob;
+        // type
+        leaf_msg.type = LEAF_TYPE_STR[static_cast<int>(leaf.leaf_type)];
 
         cv::Mat rvec, tvec;
         bool success = pnp_solver_->solvePnP_(leaf, rvec, tvec);
         if (success)
         {
-          RCLCPP_INFO(this->get_logger(),"pnp success");
+          RCLCPP_INFO(this->get_logger(), "pnp success");
           // Fill pose
           leaf_msg.pose.position.x = tvec.at<double>(0);
           leaf_msg.pose.position.y = tvec.at<double>(1);
           leaf_msg.pose.position.z = tvec.at<double>(2);
-          if(debug_){
-            RCLCPP_INFO(this->get_logger(),"x:%.2f y:%.2f z:%.2f",leaf_msg.pose.position.x,leaf_msg.pose.position.y,leaf_msg.pose.position.z);
+          // debug
+          if (debug_)
+          {
+            RCLCPP_INFO(this->get_logger(), "x:%.2f y:%.2f z:%.2f", leaf_msg.pose.position.x, leaf_msg.pose.position.y, leaf_msg.pose.position.z);
           }
           // rvec to 3x3 rotation matrix
           cv::Mat rotation_matrix;
@@ -158,7 +162,6 @@ namespace rm_auto_aim
         else
         {
           RCLCPP_WARN(this->get_logger(), "PnP failed!");
-
         }
         // Publishing detected leafs
         leafs_pub_->publish(leafs_msg_);
@@ -184,15 +187,24 @@ namespace rm_auto_aim
 
   std::unique_ptr<Detector> EnergyDetector::initDetector()
   {
+    RCLCPP_INFO(this->get_logger(), "<节点初始化> 检测器参数加载中");
     rcl_interfaces::msg::ParameterDescriptor param_desc;
-    param_desc.description = "0-RED, 1-BLUE";
+    // conf_threshold
     param_desc.integer_range.resize(1);
-    param_desc.integer_range[0].step = 1;
+    param_desc.integer_range[0].step = 0.01;
+    param_desc.integer_range[0].from_value = 0.0;
+    param_desc.integer_range[0].to_value = 1.0;
+    float conf_threshold = declare_parameter("conf_threshold", 0.6, param_desc);
+    // NMS_THRESHOLD
+    param_desc.integer_range[0].from_value = 0.0;
+    param_desc.integer_range[0].to_value = 1.0;
+    float nms_threshold = declare_parameter("nms_threshold", 0.1, param_desc);
+    // detect color
+    param_desc.description = "0-RED, 1-BLUE";
     param_desc.integer_range[0].from_value = 0;
     param_desc.integer_range[0].to_value = 1;
-    RCLCPP_INFO(this->get_logger(), "<节点初始化> 检测器参数加载中");
-    auto detect_color = declare_parameter("detect_color", BLUE, param_desc);
-    auto detector = std::make_unique<Detector>(detect_color);
+    auto detect_color = declare_parameter("detect_color", RED, param_desc);
+    auto detector = std::make_unique<Detector>(nms_threshold, conf_threshold, detect_color);
     return detector;
   }
 
@@ -201,6 +213,8 @@ namespace rm_auto_aim
   { // Convert ROS img to cv::Mat
     auto img = cv_bridge::toCvShare(img_msg, "rgb8")->image;
     // Update params
+    detector_->CONF_THRESHOLD = get_parameter("conf_threshold").as_double();
+    detector_->NMS_THRESHOLD = get_parameter("nms_threshold").as_double();
     detector_->detect_color = get_parameter("detect_color").as_int();
     auto leafs = detector_->detect(img); // 识别
 
